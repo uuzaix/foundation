@@ -25,31 +25,41 @@ object FunctionExercises extends FunctionToImpl {
   // 1a. Implement tripleVal such as it behaves in the same way as triple
   def triple(x: Int): Int = 3 * x
 
-  val tripleVal: Int => Int = (x: Int) => ???
+  val tripleVal: Int => Int = (x: Int) => 3 * x
 
   // 1b. Implement tripleList by reusing triple or tripleVal, what's the difference?
   // such as tripleList(List(1,2,3)) == List(3,6,9)
   // hint: you can use map from List
-  def tripleList(xs: List[Int]): List[Int] = ???
+  def tripleList(xs: List[Int]): List[Int] = xs.map(tripleVal)
 
   // 1c. Implement tripleVal2 by transforming triple into a val
-  val tripleVal2: Int => Int = _ => ???
+  val tripleVal2: Int => Int = x => triple(x)
+//  val tripleVal3: Int => Int = x => tripleVal.apply(x)
 
   // 1d. Implement move that increase or decrease an Int based on a Boolean flag
   // such as move(true ).apply(5) == 6
   // but     move(false).apply(5) == 4
   // note: move(true).apply(5) can be shorten to move(true)(5)
-  def move(increment: Boolean): Int => Int = ???
+  def move(increment: Boolean): Int => Int = x => if (increment) x + 1 else x - 1
 
   // 1e. Implement move2 and move3 by reusing move
   // what's the difference between the two?
-  val move2: (Boolean, Int) => Int = (_, _) => ???
+  val move2: (Boolean, Int) => Int = (increment, x) => move(increment)(x)
 
-  val move3: Boolean => Int => Int = _ => ???
+  val move3: Boolean => Int => Int = increment => move(increment)
 
   // 1f. Implement applyMany
   // such as applyMany(List(_ + 1, _ - 1, _ * 2))(10) == List(11, 9, 20)
-  def applyMany(xs: List[Int => Int]): Int => List[Int] = ???
+//  _ + 1   x => x + 1
+//   _ + _  (x, y) => x + y
+  def applyMany(xs: List[Int => Int]): Int => List[Int] = y => xs.map(_.apply(y))
+//  def applyMany(xs: List[Int => Int]): Int => List[Int] = y => xs.map(x => x(y))
+
+
+  // 1g. Implement applyManySum
+  // such as applyManySum(List(_ + 1, _ - 1, _ * 2))(10) == 40
+  def applyManySum(xs: List[Int => Int]): Int => Int = y => xs.foldLeft(0)((acc, f) => acc + f(y))
+//  def applyManySum(xs: List[Int => Int]): Int => Int = y => applyMany(xs)(y).sum
 
   ////////////////////////////
   // 2. polymorphic functions
