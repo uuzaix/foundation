@@ -68,12 +68,12 @@ object FunctionExercises extends FunctionToImpl {
   // 2a. Implement identity
   // such as identity(1) == 1
   //         identity("foo") == "foo"
-  def identity[A](x: A): A = ???
+  def identity[A](x: A): A = x
 
   // 2b. Implement const
   // such as const(5)("foo") == 5
   //         List(1,2,3).map(const(0)) == List(0,0,0)
-  def const[A, B](a: A)(b: B): A = ???
+  def const[A, B](a: A)(b: B): A = a
 
   // 2c. Transform identity into a function (val). See Eta expansion https://stackoverflow.com/a/39446986
   // val idVal = ???
@@ -81,7 +81,7 @@ object FunctionExercises extends FunctionToImpl {
   // 2d. Implement apply and apply2 which both call a function for an input
   // such as apply(5, (_: Int) + 1) == 6
   // what's the difference with apply2?
-  def apply[A, B](value: A, f: A => B): B = ???
+  def apply[A, B](value: A, f: A => B): B = f(value)
 
   def apply2[A, B](value: A)(f: A => B): B = ???
 
@@ -95,12 +95,20 @@ object FunctionExercises extends FunctionToImpl {
       p.copy(age = f(p.age))
     }
 
-  def setAge(value: Int): List[User] = ???
+//  def setAge(value: Int): List[User] = updateAge(x => identity(value))
+  def setAge(value: Int): List[User] = updateAge(const(value))
+
 
   // 2f. implement getUsers which returns all users
   // such as getUsers == List(User("John", 26), User("Lisa", 5))
   // hint: use updateAge with one of the polymorphic function we just saw
   def getUsers: List[User] = ???
+
+  // 2g. implement noopAge using updateAge
+  // such as getUsersUnchanged == List(User("John", 26), User("Lisa", 5))
+  // hint: try to use either identity or const
+  def getUsersUnchanged: List[User] = updateAge(identity)
+
 
   // 2g. Implement andThen and compose
   // such as
@@ -108,18 +116,21 @@ object FunctionExercises extends FunctionToImpl {
   // val inc   : Int => Int = _ + 1
   // compose(isEven, inc)(10) == false
   // andThen(inc, isEven)(10) == false
-  def andThen[A, B, C](f: A => B, g: B => C): A => C = ???
+  def andThen[A, B, C](f: A => B, g: B => C): A => C = x => g(f(x))
 
-  def compose[A, B, C](f: B => C, g: A => B): A => C = ???
+  def compose[A, B, C](f: B => C, g: A => B): A => C = x => f(g(x))
 
   // 2h. Implement the function f(x) = 2 * x + 1 using inc, double with compose or andThen
   val inc: Int => Int    = x => x + 1
   val double: Int => Int = x => 2 * x
 
-  val doubleInc: Int => Int = identity // ???
+  val doubleInc: Int => Int = compose(inc, double)
+//  val doubleInc: Int => Int = andThen(double, inc)
 
   // 2i. Same for f(x) = 2 * (x + 1)
-  val incDouble: Int => Int = identity // ???
+  val incDouble: Int => Int = compose(double, inc)
+  //  val incDouble: Int => Int = andThen(inc, double)
+  
 
   // 2j. inc and double are a special case of function where the input and output type is the same.
   // These functions are called endofunctions.
