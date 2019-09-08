@@ -145,13 +145,31 @@ object FunctionExercises extends FunctionToImpl {
 
   // 3a. Implement sumList using an imperative approach (while, for loop)
   // such as sumList(List(1,5,2)) == 8
-  def sumList(xs: List[Int]): Int = ???
+  def sumList(xs: List[Int]): Int = {
+    var sum: Int = 0
+    for (x <- xs) sum += x
+    sum
+  }
 
   // 3b. Use recursion to implement sumList2
   // does your implementation works with large list? e.g. sumList2(List.fill(1000000)(1))
   val largeList: List[Int] = List.fill(1000000)(1) // List(1,1,1,1, ...)
 
-  def sumList2(xs: List[Int]): Int = ???
+//  def sumList2(xs: List[Int]): Int = xs match {
+  ////    case Nil => 0
+  ////    case  x :: xs => x + sumList2(xs)
+  ////  }
+
+  def sumList2(xs: List[Int]): Int = {
+    @tailrec
+    def _sumList(ys: List[Int], acc: Int): Int =
+      ys match {
+        case Nil    => acc
+        case h :: t => _sumList(t, acc + h)
+      }
+
+    _sumList(xs, 0)
+  }
 
   ///////////////////////
   // GO BACK TO SLIDES
@@ -182,6 +200,9 @@ object FunctionExercises extends FunctionToImpl {
   // 3c. Implement multiply using foldLeft
   // such as multiply(List(3,2,4)) == 24
   def multiply(xs: List[Int]): Int = ???
+
+//  def sumList3(xs: List[Int]): Int = foldLeft(xs, 0)(_ + _)
+
 
   // 3d. Implement filter using foldLeft
   // such as filter(List(1,2,3,4))(isEven) == List(2,4)
