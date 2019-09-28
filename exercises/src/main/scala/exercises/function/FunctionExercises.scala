@@ -196,12 +196,14 @@ object FunctionExercises extends FunctionToImpl {
       case Nil    => z
       case h :: t => foldLeftRec(t, f(z, h))(f)
     }
+  
+  def sumList3(xs: List[Int]): Int = foldLeft(xs, 0)(_ + _)
 
   // 3c. Implement multiply using foldLeft
   // such as multiply(List(3,2,4)) == 24
+
   def multiply(xs: List[Int]): Int = ???
 
-//  def sumList3(xs: List[Int]): Int = foldLeft(xs, 0)(_ + _)
 
 
   // 3d. Implement filter using foldLeft
