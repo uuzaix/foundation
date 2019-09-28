@@ -97,7 +97,7 @@ val dictionary = Map(
 ```
 
 ---
-# First class function: higher order
+# First class function: Higher Order
 
 ```scala
 def map(xs: List[Int])(`f: Int => Int`): List[Int] = ???
@@ -117,21 +117,19 @@ List("hello", "world", "is", "a", "common", "String").takeWhile(_.length > 2)
 ```
 
 ---
-# First class function: return
+# First class function: Currying
 
 ```tut:invisible
-def formatDouble(decimal: Int): Double => String =
-  (value: Double) =>
-    BigDecimal(value).setScale(decimal, BigDecimal.RoundingMode.HALF_DOWN).toDouble.toString
+def formatDouble(scale: Int)(value: Double): String =
+  BigDecimal(value).setScale(scale, BigDecimal.RoundingMode.HALF_DOWN).toDouble.toString
 
 val format2D: Double => String = formatDouble(2)
 val format5D: Double => String = formatDouble(5)
 ```
 
 ```scala
-def formatDouble(decimal: Int): `Double => String` =
-  (value: Double) =>
-    BigDecimal(value).setScale(decimal, BigDecimal.RoundingMode.HALF_DOWN).toDouble.toString
+def formatDouble(`scale: Int)(value: Double`): String =
+  BigDecimal(value).setScale(scale, BigDecimal.RoundingMode.HALF_DOWN).toDouble.toString
 
 val format2D: Double => String = formatDouble(2)
 val format5D: Double => String = formatDouble(5)
@@ -171,11 +169,9 @@ background-image: url(img/function/fold-left-all.svg)
 ```tut:silent
 def foldLeft[A, B](fa: List[A], b: B)(f: (B, A) => B): B = {
   var acc = b
-  val it = fa.iterator
 
-  while(it.hasNext) {
-    val current = it.next()
-    acc = f(acc, current)
+  for (a <- fa) {
+    acc = f(acc, a)
   }
 
   acc
@@ -191,7 +187,7 @@ def foldLeft[A, B](fa: List[A], b: B)(f: (B, A) => B): B = {
 ---
 .cols[
 .fortyfive[
-# FoldLeft
+# Fold Left
 
 <br>
 <br>
@@ -215,7 +211,7 @@ sum(List(2,3,10,4))
 ---
 .cols[
 .fortyfive[
-# FoldLeft
+# Fold Left
 
 <br>
 <br>
@@ -333,24 +329,24 @@ class: center, middle
 ---
 class: center, middle
 
-# Pure function
+# Pure Function
 
 ---
 background-image: url(img/function/mapping-1.svg)
 
-# Pure function is a mapping
+# Pure Function is a mapping
 
 ---
 background-image: url(img/function/mapping-2.svg)
 
-# Pure function is a mapping
+# Pure Function is a mapping
 
 ---
 class: center, middle
 
 # Programming function
 # !=
-# Pure function
+# Pure Function
 
 ---
 background-image: url(img/function/partial-function.svg)
@@ -458,70 +454,129 @@ background-image: url(img/function/side-effect-3.svg)
 ---
 # Reflection
 
+```tut:invisible
+case class OrderId(value: String)
+case class Order(id: OrderId, quantity: Int)
+
+import scala.concurrent.Future
+```
+
+```tut:silent
+trait OrderApi {
+  def addOrder(order: Order): Future[Unit]
+  def getOrder(orderId: OrderId): Future[Order]
+}
+```
+
+```scala
+class DbOrderApi(db: DB) extends OrderApi {
+  ...
+}
+
+class OrderApiWithAuth(api: OrderApi, auth: AuthService) extends OrderApi {
+  ...
+}
+```
+
+
+```scala
+def getAll(api: OrderApi)(orderIds: List[OrderId]): Future[List[Order]] =
+  api match {
+    case x: DbOrderApi       => ... ❌
+    case x: OrderApiWithAuth => ... ❌
+    case _                   => ... ❌
+  }
+```
+
+---
+# Reflection
+
+```tut:invisible
+case class OrderId(value: String)
+case class Order(id: OrderId, quantity: Int)
+
+import scala.concurrent.Future
+```
+
+```tut:silent
+trait OrderApi {
+  def addOrder(order: Order): Future[Unit]
+  def getOrder(orderId: OrderId): Future[Order]
+}
+```
+
+```scala
+class DbOrderApi(db: DB) extends OrderApi {
+  ...
+}
+
+class OrderApiWithAuth(api: OrderApi, auth: AuthService) extends OrderApi {
+  ...
+}
+```
+
+
+```scala
+def getAll(api: OrderApi)(orderIds: List[OrderId]): Future[List[Order]] = {
+  if     (api.`isInstanceOf[DbOrderApi]`) ...
+  else if(api.`isInstanceOf[OrderApiWithAuth]`) ...
+  else ...
+}
+```
+
+---
+# A Trait or Class is equivalent to a Record of Functions
+
+```tut:silent
+trait OrderApi {
+  def addOrder(order: Order): Future[Unit]
+  def getOrder(orderId: OrderId): Future[Order]
+}
+
+case class OrderApi(
+  addOrder: Order   => Future[Unit],
+  getOrder: OrderId => Future[Order]
+)
+```
+
+---
+# A SEALED Trait or Class is equivalent to an Enumeration
+
+```tut:silent
+sealed trait ConfigValue
+
+object ConfigValue {
+  case class AnInt(value: Int)      extends ConfigValue
+  case class AString(value: String) extends ConfigValue
+  case object Empty                 extends ConfigValue
+}
+```
+
+<br>
+
+### A ConfigValue is either an Int, a String or Empty
+
+---
+# Reflection for generics and Any
+
 ```tut:silent
 def foo[A](a: A): A = a match {
   case x: Int    => (x + 1).asInstanceOf[A]
   case x: String => x.reverse.asInstanceOf[A]
   case _         => a
 }
-```
 
-```tut
-foo(5)
-foo("Hello")
-foo(true)
-```
-
----
-# Reflection is not reliable
-
-```tut:silent
-def foo[A](a: A): Int = a match {
-  case _: List[Int]    => 0
-  case _: List[String] => 1
-  case _               => 2
+def bar(a: Any): Int = a match {
+  case x: Int         =>  1
+  case x: String      =>  2
+  case x: ConfigValue =>  3
+  case _              => -1
 }
 ```
 
+<br>
 
-```tut
-foo(List(1,2,3))
-foo(List("abc"))
-```
-
----
-# Reflection makes signature unreliable
-
-```tut:silent
-def foo[A](a: A): A = ???
-```
-
---
-
-# Without Reflection
-
-```tut:silent
-def foo[A](a: A): A = a
-```
-
-and without infinite recursion
-
-```tut:silent
-def foo[A](a: A): A = foo(a)
-```
-
----
-# Also apply to `Any` and non sealed trait
-
-```tut:silent
-def foo(a: Any): Int = ???
-```
-
-# Without Reflection
-
-```tut:silent
-def foo[A](a: Any): Int = 5
-```
+### A generic type or Any is equivalent to a trait with no methods
 
 ---
 .h1[# Pure Function (aka Scalazzi subset)]
@@ -546,7 +601,7 @@ class: center, middle
 ---
 class: center, middle
 
-# Why pure function?
+# Why Pure Function?
 
 ---
 class: center, middle
@@ -749,7 +804,7 @@ hello_simplified(foo) // print foo
 ---
 class: center, middle
 
-# Pure function
+# Pure Function
 
 # means
 
@@ -851,7 +906,7 @@ class: center, middle
 ---
 class: center, middle
 
-# With pure function, you cannot __DO__ anything
+# With Pure Function, you cannot __DO__ anything
 
 ---
 # Resources and further study

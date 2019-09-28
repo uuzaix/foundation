@@ -48,6 +48,11 @@ layout: true
 ---
 class: center, middle
 
+# Main audience: Scala dev with 6 months to 4 years experience
+
+---
+class: center, middle
+
 # Three Goals
 
 
@@ -100,7 +105,19 @@ def reverseString(x: String): String = {
 
 ```scala
 def reverseString(x: String): String =
-  x.`foldLeft`(List.empty[Char])((acc, c) => c :: acc).mkString // or with StringBuffer
+  x.`foldLeft`("")((acc: String, c: Char) => acc.prepended(c)) // or with StringBuffer
+```
+
+---
+.h1[# 2. Develop your FP intuition]
+
+<br>
+
+### How do you reverse a String?
+
+```scala
+def reverseString(x: String): String =
+  x.foldLeft(`""`)((acc: String, c: Char) => acc.`prepended`(c)) // or with StringBuffer
 ```
 
 ---
@@ -113,16 +130,15 @@ class: center, middle
 # Out of scope
 ]
 
+<br>
 
+### How to build a complete FP application
 
-### How to build complete FP application
-   * Monad Transformer
-   * Free Monad
-   * Final Tagless
-   * Eff
-   * ...
+<br>
 
 ### Scala/JVM low level optimisations
+
+<br>
 
 ### Library specific API
 

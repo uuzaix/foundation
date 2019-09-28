@@ -25,7 +25,9 @@ object FunctionExercises extends FunctionToImpl {
   // 1a. Implement tripleVal such as it behaves in the same way as triple
   def triple(x: Int): Int = 3 * x
 
-  val tripleVal: Int => Int = (x: Int) => 3 * x
+
+  val tripleVal: Int => Int =
+    (x: Int) => 3 * x
 
   // 1b. Implement tripleList by reusing triple or tripleVal, what's the difference?
   // such as tripleList(List(1,2,3)) == List(3,6,9)
@@ -36,6 +38,8 @@ object FunctionExercises extends FunctionToImpl {
   val tripleVal2: Int => Int = x => triple(x)
 //  val tripleVal3: Int => Int = x => tripleVal.apply(x)
 
+
+// Old
   // 1d. Implement move that increase or decrease an Int based on a Boolean flag
   // such as move(true ).apply(5) == 6
   // but     move(false).apply(5) == 4
@@ -50,16 +54,38 @@ object FunctionExercises extends FunctionToImpl {
 
   // 1f. Implement applyMany
   // such as applyMany(List(_ + 1, _ - 1, _ * 2))(10) == List(11, 9, 20)
-//  _ + 1   x => x + 1
-//   _ + _  (x, y) => x + y
+  //  _ + 1   x => x + 1
+  //   _ + _  (x, y) => x + y
   def applyMany(xs: List[Int => Int]): Int => List[Int] = y => xs.map(_.apply(y))
-//  def applyMany(xs: List[Int => Int]): Int => List[Int] = y => xs.map(x => x(y))
+  //  def applyMany(xs: List[Int => Int]): Int => List[Int] = y => xs.map(x => x(y))
 
 
   // 1g. Implement applyManySum
   // such as applyManySum(List(_ + 1, _ - 1, _ * 2))(10) == 40
   def applyManySum(xs: List[Int => Int]): Int => Int = y => xs.foldLeft(0)((acc, f) => acc + f(y))
-//  def applyManySum(xs: List[Int => Int]): Int => Int = y => applyMany(xs)(y).sum
+  //  def applyManySum(xs: List[Int => Int]): Int => Int = y => applyMany(xs)(y).sum
+
+  // New
+  // 1d. Implement move that increase or decrease an Int based on a Direction
+  // such as move(Up)(5) == 6
+  // but     move(Down)(5) == 4
+  sealed trait Direction
+  object Direction {
+    case object Up   extends Direction
+    case object Down extends Direction
+  }
+
+  def move(direction: Direction)(x: Int): Int = ???
+
+  // 1e. what's the difference between all these versions of move?
+  def move2(direction: Direction, x: Int): Int =
+    move(direction)(x)
+
+  val move3: (Direction, Int) => Int =
+    (direction, x) => move(direction)(x)
+
+  val move4: Direction => Int => Int =
+    direction => x => move(direction)(x)
 
   ////////////////////////////
   // 2. polymorphic functions
@@ -68,6 +94,9 @@ object FunctionExercises extends FunctionToImpl {
   // 2a. Implement identity
   // such as identity(1) == 1
   //         identity("foo") == "foo"
+  // Imagine you were a hacker trying to introduce a bug in identity.
+  // Which other implementations of identity could you use such as it
+  // satisfies the type checker.
   def identity[A](x: A): A = x
 
   // 2b. Implement const
@@ -75,40 +104,40 @@ object FunctionExercises extends FunctionToImpl {
   //         List(1,2,3).map(const(0)) == List(0,0,0)
   def const[A, B](a: A)(b: B): A = a
 
-  // 2c. Transform identity into a function (val). See Eta expansion https://stackoverflow.com/a/39446986
-  // val idVal = ???
 
-  // 2d. Implement apply and apply2 which both call a function for an input
-  // such as apply(5, (_: Int) + 1) == 6
-  // what's the difference with apply2?
-  def apply[A, B](value: A, f: A => B): B = f(value)
-
-  def apply2[A, B](value: A)(f: A => B): B = ???
-
-  // 2e. Implement setAge which update the age of all users
-  // such as setAge(10) == List(User("John", 10), User("Lisa", 10))
-  // hint: use updateAge with one of the polymorphic function we just saw
+  // 2c. Implement setUsersAge which updates the age of all users
+  // such as setUsersAge(10) == List(User("John", 10), User("Lisa", 10))
+  // hint: use updateUsersAge with one of the polymorphic functions we just saw
   case class User(name: String, age: Int)
 
-  def updateAge(f: Int => Int): List[User] =
+  def updateUsersAge(f: Int => Int): List[User] =
     List(User("John", 26), User("Lisa", 5)).map { p =>
       p.copy(age = f(p.age))
     }
 
 //  def setAge(value: Int): List[User] = updateAge(x => identity(value))
-  def setAge(value: Int): List[User] = updateAge(const(value))
-
-
-  // 2f. implement getUsers which returns all users
-  // such as getUsers == List(User("John", 26), User("Lisa", 5))
-  // hint: use updateAge with one of the polymorphic function we just saw
-  def getUsers: List[User] = ???
-
+//  def setAge(value: Int): List[User] = updateAge(const(value))
   // 2g. implement noopAge using updateAge
   // such as getUsersUnchanged == List(User("John", 26), User("Lisa", 5))
   // hint: try to use either identity or const
-  def getUsersUnchanged: List[User] = updateAge(identity)
+  //  def getUsersUnchanged: List[User] = updateAge(identity)
 
+  def setUsersAge(value: Int): List[User] = ???
+
+  // 2d. implement getUsers which returns all users
+  // such as getUsers == List(User("John", 26), User("Lisa", 5))
+  // hint: use updateUsersAge with one of the polymorphic functions we just saw
+  def getUsers: List[User] = ???
+
+
+
+  // 2e. Transform identity into a function (val). See Eta expansion https://stackoverflow.com/a/39446986
+  // val idVal = ???
+
+  // 2f. what's the difference between mapOption and mapOption2?
+  // Which one should you use?
+  def mapOption[A, B](option: Option[A], f: A => B): Option[B]  = option.map(f)
+  def mapOption2[A, B](option: Option[A])(f: A => B): Option[B] = option.map(f)
 
   // 2g. Implement andThen and compose
   // such as
@@ -152,7 +181,7 @@ object FunctionExercises extends FunctionToImpl {
   }
 
   // 3b. Use recursion to implement sumList2
-  // does your implementation works with large list? e.g. sumList2(List.fill(1000000)(1))
+  // does your implementation work with a large list? e.g. sumList2(List.fill(1000000)(1))
   val largeList: List[Int] = List.fill(1000000)(1) // List(1,1,1,1, ...)
 
 //  def sumList2(xs: List[Int]): Int = xs match {
@@ -171,20 +200,19 @@ object FunctionExercises extends FunctionToImpl {
     _sumList(xs, 0)
   }
 
+  // 3c. Implement mkString, you can use an imperative approach or recursion
+  // such as mkString(List('H', 'e', 'l', 'l', 'o')) == "Hello"
+  def mkString(xs: List[Char]): String = ???
+
   ///////////////////////
   // GO BACK TO SLIDES
   ///////////////////////
 
-  def sumList3(xs: List[Int]): Int =
-    foldLeft(xs, 0)(_ + _)
-
   def foldLeft[A, B](fa: List[A], b: B)(f: (B, A) => B): B = {
     var acc = b
-    val it  = fa.iterator
 
-    while (it.hasNext) {
-      val current = it.next()
-      acc = f(acc, current)
+    for (a <- fa) {
+      acc = f(acc, a)
     }
 
     acc
@@ -199,38 +227,50 @@ object FunctionExercises extends FunctionToImpl {
   
   def sumList3(xs: List[Int]): Int = foldLeft(xs, 0)(_ + _)
 
-  // 3c. Implement multiply using foldLeft
+  def sumList3(xs: List[Int]): Int =
+    foldLeft(xs, 0)(_ + _)
+
+  def mkString2(xs: List[Char]): String =
+    foldLeft(xs, "")(_ + _)
+
+  // 3d. Implement multiply using foldLeft
   // such as multiply(List(3,2,4)) == 24
 
   def multiply(xs: List[Int]): Int = ???
 
+<<<<<<< HEAD
 
 
   // 3d. Implement filter using foldLeft
+||||||| merged common ancestors
+  // 3d. Implement filter using foldLeft
+=======
+  // 3e. Implement filter using foldLeft
+>>>>>>> 6894505e0c670f13276febe2628c0c987429b196
   // such as filter(List(1,2,3,4))(isEven) == List(2,4)
   def filter[A](xs: List[A])(p: A => Boolean): List[A] = ???
 
-  // 3e. Implement forAll using a recursion or loop
+  // 3f. Implement forAll using a recursion or loop
   // forAll returns true if all the elements in the List are true
   // such as forAll(List(true, true , true)) == true
   // but     forAll(List(true, false, true)) == false
   // does your implementation terminate early? e.g. forAll(List(false, false, false)) does not go through the entire list
-  // does your implementation works for large list? e.g. forAll(List.fill(1000000)(true))
+  // does your implementation work with a large list? e.g. forAll(List.fill(1000000)(true))
   def forAll(xs: List[Boolean]): Boolean = ???
 
-  // 3f. Implement find using a recursion or loop
+  // 3g. Implement find using a recursion or loop
   // find returns the first element of a List that matches the predicate `p`
   // such as find(List(1,3,10,2,6))(_ > 5) == Some(10)
   // but     find(List(1,2,3))(_ == -1) == None
   // does your implementation terminate early? e.g. find(List(1,2,3,4)(_ == 2) stop iterating as soon as it finds 2
-  // does your implementation works for large list? e.g. find(1.to(1000000).toList)(_ == -1)
+  // does your implementation work with a large list? e.g. find(1.to(1000000).toList)(_ == -1)
   def find[A](xs: List[A])(p: A => Boolean): Option[A] = ???
 
   ///////////////////////
   // GO BACK TO SLIDES
   ///////////////////////
 
-  // 3g. Implement forAll2 and find2 using foldRight
+  // 3h. Implement forAll2 and find2 using foldRight
   // foldRight is an abstraction over recursion that can terminate early
   // early termination is achieved by laziness (see call by name `=> B`)
   def foldRight[A, B](xs: List[A], z: B)(f: (A, => B) => B): B =
@@ -243,11 +283,12 @@ object FunctionExercises extends FunctionToImpl {
 
   def find2[A](xs: List[A])(p: A => Boolean): Option[A] = ???
 
-  ///////////////////////
-  // GO BACK TO SLIDES
-  ///////////////////////
+  // 3i. which fold (left or right) would you use to implement the following min and take? Why
+  def min(xs: List[Int]): Option[Int] = ???
 
-  // 3i. Run isEven / isOdd for small and large input. Search for mutual tail recursion in scala
+  def take[A](xs: List[A])(x: Int): List[Int] = ???
+
+  // 3j. Run isEven / isOdd for small and large input. Search for mutual tail recursion in scala
   def isEven(x: Int): Boolean =
     if (x > 0) isOdd(x - 1)
     else if (x < 0) isOdd(x + 1)
@@ -258,7 +299,7 @@ object FunctionExercises extends FunctionToImpl {
     else if (x < 0) isEven(x + 1)
     else false
 
-  // 3j. does the commented function below compile? If yes, what happens when you call it
+  // 3k. does the commented function below compile? If yes, what happens when you call it
   // Search for General recursion
   // or https://www.quora.com/Whats-the-big-deal-about-recursion-without-a-terminating-condition
   //  def foo: Int = foo

@@ -16,10 +16,16 @@
     .large { font-size: 36px; }
     .pull-left { float: left; width: 47%; }
     .pull-right { float: right; width: 47%; }
+    .medium-left { float: left; width: 37%; }
+    .large-left { float: left; width: 67%; }
+    .small-right { float: right; width: 27%; }
+    .medium-right { float: right; width: 37%; }
+    .large-right { float: right; width: 57%; }
     .footer { position: absolute; bottom: 12px; left: 45px }
     table { border-collapse: collapse; display: inline-block; }
     th, td { padding: 10px; border: 1px solid black; }
     tr:nth-child(even) {background-color: #f2f2f2;}
+    .hl { color : blue }
 
   </style>
 </head>
@@ -48,50 +54,18 @@ layout: true
 </div>
 
 ---
-class: center, middle
-
-  # All dynamic languages are static languages with a <span style="color:blue">single</span> type
-
----
-class: center, middle
-
-# Any
-
----
-# Any => Any
-
-```tut:silent
-def inc(value: Any): Any = value match {
-  case x: Int    => x + 1
-  case x: Double => x + 1
-  case x: Char   => x.toString + "1"
-  case x: String => x + "1"
-}
-```
-
---
-
-```tut
-inc(5)
-inc(10.3)
-inc('c')
-```
-
---
-
-```tut:fail
-inc(java.time.Instant.ofEpochMilli(0))
-```
-
----
 .h1[# Plan]
 
 .large[
-* What is the impact of types on our program? How to measure it?
+* What is the cost of misusing types?
 ]
 
 .large[
-* How to select types and tests to write more correct programs
+* How to use Algebraic Data Type (ADT) to encode data
+]
+
+.large[
+* Learn how to count types and tests
 ]
 
 .large[
@@ -99,304 +73,306 @@ inc(java.time.Instant.ofEpochMilli(0))
 ]
 
 ---
-background-image: url(img/types-1.jpg)
+class: center, middle
 
-# Type
+# Exercise 1: Misused types
 
----
-background-image: url(img/types-1-bis.jpg)
-
-# Type
+`exercises.types.TypeExercises.scala`
 
 ---
 class: center, middle
 
-  # Cardinality of a type should <span style="color:blue">exactly</span> fit business requirement
+# Type should .hl[exactly] fit business requirements
 
 ---
-# Type too big
+class: center, middle
+
+# Imprecise data lead to errors
+# and misleading documentation
+
+---
+class: center, middle
+
+# How should we encode data?
+
+---
+.h1[# Algebraic Data Type (ADT)]
+
+.large[
+* OR, a `ConfigValue` is
+   * a `String` .hl[OR]
+   * an `Int` .hl[OR]
+   * `Empty`
+]
+
+.large[
+* AND, a `User` is
+   * an `userId` .hl[AND]
+   * a `name` .hl[AND]
+   * an `address`
+]
+
+---
+.h1[# OR]
+
+.large[
+* a `Boolean` is `true` .hl[OR] `false`
+* an Int is a `-10` .hl[OR] `0` .hl[OR] `1` .hl[OR] ...
+* a `DayOfTheWeek` is `Monday` .hl[OR] `Tuesday` .hl[OR] `Wednesday` .hl[OR] ...
+* an `Option` is a `Some` .hl[OR] a `None`
+* a `List` is a `Nil` .hl[OR] a `Cons`
+* a `Json` is a `JsonNumber` .hl[OR] a `JsonString` .hl[OR] a `JsonArray` .hl[OR] a `JsonObject` .hl[OR] ...
+]
+
+---
+class: center, middle
+
+# How should we encode OR?
+### A `ConfigValue` is a `String` OR an `Int` OR `Empty`
+
+---
+# OR Encoding
 
 ```tut:silent
-def getCurrency(country: String): String =
-  country match {
-    case "France" | "Germany" => "EUR"
-    case "United Kingdom"     => "GBP"
-    case "Switzerland"        => "CHF"
-    case _                    => ???
-  }
-```
+sealed trait ConfigValue
 
----
-# Type too big
-
-```tut:silent
-def getCurrency(country: String): Option[String] =
-  country match {
-    case "France" | "Germany" => Some("EUR")
-    case "United Kingdom"     => Some("GBP")
-    case "Switzerland"        => Some("CHF")
-    case _                    => None
-  }
-```
-
----
-# Type just right
-
-```tut:silent
-sealed trait Country
-
-case object France        extends Country
-case object Germany       extends Country
-case object UnitedKingdom extends Country
-case object Switzerland   extends Country
-
-sealed trait Currency
-
-case object EUR extends Currency
-case object GBP extends Currency
-case object CHF extends Currency
-
-def getCurrency(country: Country): Currency =
-  country match {
-    case France | Germany => EUR
-    case UnitedKingdom    => GBP
-    case Switzerland      => CHF
-  }
-```
-
----
-# Type too big
-
-```tut:silent
-case class Person(name: String, streetNumber: Option[Int], streetName: Option[String])
-
-def fullAddress(person: Person): Option[String] =
-  (person.streetNumber, person.streetName) match {
-    case (Some(x), Some(y)) => Some(s"$x $y")
-    case (Some(x), None   ) => ???
-    case (None   , Some(y)) => ???
-    case (None   , None   ) => None
-  }
-```
-
-
-```tut
-fullAddress(Person("John", Some(108), Some("Canon Street")))
-fullAddress(Person("John", None, None))
-```
-
----
-# Type just right
-
-```tut:silent
-case class Address(streetNumber: Int, streetName: String)
-case class Person(name: String, address: Option[Address])
-
-def fullAddress(address: Address): String =
-  s"${address.streetNumber} ${address.streetName}"
-
-def fullPersonAddress(person: Person): Option[String] =
-  person.address.map(fullAddress)
-```
-
----
-# Type too big
-
-```scala
-// quantity must be positive
-case class Item(id: String, quantity: Int, price: Double)
-
-// order must have at least one item
-case class Order(id: String, items: List[Item]){
-  def total: Double =
-    items.map(i => i.quantity * i.price).sum
-}
-```
-
-```tut:invisible
-case class Item(id: String, quantity: Int, price: Double)
-
-case class Order(id: String, items: List[Item]){
-  def total: Double =
-    items.map(i => i.quantity * i.price).sum
+object ConfigValue {
+  case class ConfigString(value: String) extends ConfigValue
+  case class ConfigNumber(value: Double) extends ConfigValue
+  case object ConfigEmpty extends ConfigValue
 }
 ```
 
 --
 
-```tut:silent
-def halfPriceFirstItem(order: Order): Order = {
-  val firstItem = order.items.head
-  val discounted = firstItem.copy(price = firstItem.price / 2)
-  order.copy(items = discounted :: order.items.tail)
-}
-```
-
----
-# Type too big
+### In Scala 3
 
 ```scala
-// quantity must be positive
-case class Item(id: String, quantity: Int, price: Double)
-
-// order must have at least one item
-case class Order(id: String, items: List[Item]){
-  def total: Double =
-    items.map(i => i.quantity * i.price).sum
-}
-```
-
-```tut:invisible
-case class Item(id: String, quantity: Int, price: Double)
-
-case class Order(id: String, items: List[Item]){
-  def total: Double =
-    items.map(i => i.quantity * i.price).sum
-}
-```
-
-```tut:silent
-def halfPriceFirstItem(order: Order): Order = {
-  order.items match {
-    case Nil     => ???
-    case x :: xs =>
-      val discounted = x.copy(price = x.price / 2)
-      order.copy(items = discounted :: xs)
-  }
+enum ConfigValue {
+  case ConfigString(value: String)
+  case ConfigNumber(value: Double)
+  case ConfigEmpty
 }
 ```
 
 ---
-# Type just right
+.h1[# AND]
+
+.large[
+* a `User` is an `userId` .hl[AND] a `name` .hl[AND] an `address`
+* a `ZonedDateTime` is a `dateTime` .hl[AND] a `timeZone`
+* a `Cons` is a `head` .hl[AND] a `tail`
+* a `Tuple2` is a `_1` .hl[AND] a `_2`
+]
+
+---
+class: center, middle
+
+# How should we encode AND?
+### A `User` is an `userId` AND a `name` AND an `address`
+
+---
+# AND Encoding
+
+```tut:invisible
+import java.util.UUID
+
+case class Address(streetNumber: Int, streetName: String, postCode: String)
+
+case class User(userId: UUID, name: String, address: Address)
+```
 
 ```scala
-import cats.data.NonEmptyList
-import cats.implicits._
+import java.util.UUID
 
-// quantity must be positive
-case class Item(id: String, quantity: Int, price: Double)
+case class User(userId: UUID, name: String, address: Address)
 
-case class Order(id: String, items: NonEmptyList[Item]){
-  def total: Double =
-    items.foldMap(i => i.quantity * i.price)
-}
-```
-
-```tut:invisible
-import cats.data.NonEmptyList
-import cats.implicits._
-
-case class Item(id: String, quantity: Int, price: Double)
-
-case class Order(id: String, items: NonEmptyList[Item]){
-  def total: Double =
-    items.foldMap(i => i.quantity * i.price)
-}
-```
-
-```tut:silent
-def halfPriceFirstItem(order: Order): Order = {
-  val firstItem  = order.items.head
-  val discounted = firstItem.copy(price = firstItem.price / 2)
-  order.copy(items = NonEmptyList(discounted, order.items.tail))
-}
-```
-
----
-# Even further
-
-```tut:silent
-import cats.data.NonEmptyList
-import cats.implicits._
-import eu.timepit.refined.types.numeric.PosInt
-
-case class Item(id: String, quantity: PosInt, price: Double)
-
-case class Order(id: String, items: NonEmptyList[Item]){
-  def total: Double =
-    items.foldMap(i => i.quantity.value * i.price)
-}
-```
-
-```tut:silent
-def halfPriceFirstItem(order: Order): Order = {
-  val firstItem  = order.items.head
-  val discounted = firstItem.copy(price = firstItem.price / 2)
-  order.copy(items = NonEmptyList(discounted, order.items.tail))
-}
-```
-
-
----
-# Type too small
-
-```tut:silent
-import java.util.Date
+case class Address(streetNumber: Int, streetName: String, postCode: String)
 ```
 
 ```tut
-val fifthMarch = new Date(1551818168101L)
-```
-
---
-
-```tut
-List(1,2,3,4).size
-```
-
---
-
-```scala
-def parseJson(json: String): Option[Json] = ???
+User(UUID.randomUUID(), "John Doe", Address(108, "Cannon Street", "EC4N 6EU"))
 ```
 
 ---
 class: center, middle
 
-# Function
+# Exercise 2: Data Encoding
+
+`exercises.types.TypeExercises.scala`
+
+---
+class: center, middle
+
+# Case Class and Sealed Trait map exactly to business language AND and OR
+
+### Together, they form what is called Algebraic Data Types (ADTs)
+
+---
+class: center, middle
+
+# Nested AND and OR can be used to encode any data precisely
+
+### OR is generally underused
+
+---
+class: center, middle
+
+# What else can we do to .hl[improve precision] of our encoding?
+
+
+# What else can we do to .hl[reduce errors] caused by our encoding?
+
+---
+# How can we measure benefits of two encodings?
+
+```scala
+def getCurrency(country: String): Option[String]
+```
+
+### Is it better to reduce input or reduce output?
+
+```scala
+def getCurrency(country: Country): String
+```
+
+```scala
+def getCurrency(country: String): Option[Currency]
+```
+
+--
+
+### How much benefit do we get by reducing both?
+
+```scala
+def getCurrency(country: Country): Currency
+```
+
+---
+background-image: url(img/type/cardinality-1.svg)
+
+# Type is a Set
+
+---
+background-image: url(img/type/cardinality-2.svg)
+
+# Cardinality
+
+---
+.pull-left[
+.h1[# Cardinality: Any]
+
+```tut:silent
+val x: Int = 3
+
+val hello: String = "hello"
+
+case class User(name: String, age: Int)
+
+val john: User = User("John", 53)
+```
+
+```tut
+x: Any
+
+john: Any
+
+
+List(x, hello, john)
+```
+]
+
+.pull-right[
+<br>
+![Any](img/type/any.svg)
+]
+
+---
+background-image: url(img/type/nothing-1.svg)
+
+# Cardinality: Nothing
+
+---
+.medium-left[
+.h1[# Cardinality: Nothing]
+
+```scala
+sealed trait Nothing
+  extends Int
+  with    Boolean
+  with    String
+  with    Foo
+  with    List[Int]
+  with    Any
+```
+]
+
+.large-right[
+<br>
+![Nothing](img/type/nothing-2.svg)
+]
+
+---
+background-image: url(img/type/unit.svg)
+
+# Cardinality: Unit
+
+---
+background-image: url(img/type/io-unit.svg)
+
+# Cardinality: IO
 
 ---
 background-image: url(img/function/mapping-2.svg)
 
-# Function
-
+# Function is a mapping between Types
 
 ---
-class: center, middle
+# A => B is a Type
+
+<br>
+<br>
+<br>
 
 ```tut:silent
 val isEven: Int => Boolean =
-  x => x % 2 == 0
+  (x: Int) => x % 2 == 0
+
 
 val increment: Int => Int =
-  x => x + 1
+  (x: Int) => x + 1
 ```
 
 ---
 class: center, middle
 
-# Type is a set
-
---
+# A => B is a Type
 
 # &&
 
-# A => B is a type
+# Type is a Set
 
 ---
-background-image: url(img/A-to-B-set-1.jpg)
+background-image: url(img/type/function-set-1.svg)
 
-# A => B is a set!
+# A => B is a Set!
 
 ---
-background-image: url(img/int-to-int-type-1.jpg)
+background-image: url(img/type/function-set-2.svg)
 
-# Function is a set!
+# Functions are Sets!
 
 ---
 class: center, middle
 
-# |A => B| represents how many implementations exist
+# How many elements are in the A => B Set?
+
+# How many implementations satisfy the type checker?
+
+---
+class: center, middle
+
+# |A => B|
 
 ---
 class: center, middle
@@ -406,33 +382,17 @@ class: center, middle
 ---
 class: center, middle
 
-# Ultimate goal |A => B| = 1
-
----
-# How to calculate |A => B| ?
-
-```tut:silent
-def getCurrency1(country: String ): Option[String] = ???
-
-def getCurrency2(country: Country): Currency = ???
-```
-
---
-
-## Intuitively
-
-```scala
-|getCurrency2| < |getCurrency1|
-```
-
+# Perfect case is when |A => B| = 1
 
 ---
 class: center, middle
 
-# Exercise 1
+# Exercise 3: Cardinality
+
+`exercises.types.TypeExercises.scala`
 
 ---
-# Sealed trait cardinality
+# Sealed Trait
 
 ```tut:silent
 sealed trait IntOrBoolean
@@ -441,7 +401,6 @@ case class AnInt(value: Int) extends IntOrBoolean
 case class ABoolean(value: Boolean) extends IntOrBoolean
 ```
 
---
 
 ```scala
 AnInt(Int.MinValue) // ~ -2 billion
@@ -450,16 +409,10 @@ AnInt(0)
 AnInt(1)
 ...
 AnInt(Int.MaxValue) // ~ +2 billion
-```
 
---
-
-```scala
 ABoolean(false)
 ABoolean(true)
 ```
-
---
 
 ```scala
 |IntOrBoolean| = |AnInt| + |ABoolean|
@@ -467,13 +420,11 @@ ABoolean(true)
 ```
 
 ---
-# Case class cardinality
+# Case Class
 
 ```tut:silent
 case class IntAndBoolean(i: Int, b: Boolean)
 ```
-
---
 
 ```scala
 IntAndBoolean(Int.MinValue, false)  // ~ -2 billion
@@ -482,11 +433,7 @@ IntAndBoolean(0, false)
 IntAndBoolean(1, false)
 ...
 IntAndBoolean(Int.MaxValue, false) // ~ +2 billion
-```
 
---
-
-```scala
 IntAndBoolean(Int.MinValue, true)  // ~ -2 billion
 ...
 IntAndBoolean(0, true)
@@ -495,8 +442,6 @@ IntAndBoolean(1, true)
 IntAndBoolean(Int.MaxValue, true) // ~ +2 billion
 ```
 
---
-
 ```scala
 |IntAndBoolean| = |Int| * |Boolean|
 ```
@@ -504,23 +449,22 @@ IntAndBoolean(Int.MaxValue, true) // ~ +2 billion
 ---
 class: center, middle
 
-# A sealed trait is called a <span style="color:blue">Sum</span> type
+# A Sealed Trait is called a .hl[Sum] type
 
---
-
-# A case class is called a <span style="color:blue">Product</span> type
+# A Case Class is called a .hl[Product] type
 
 ---
 class: center, middle
 
-# A sealed trait is called a Co-Product
-
-# A case class is called a Product
+# `|A OR B OR C| = |A| + |B| + |C|`
+# `|A AND B AND C| = |A| * |B| * |C|`
 
 ---
 class: center, middle
 
-# Exercise 2
+# Exercise 4: Advanced Cardinality
+
+`exercises.types.TypeExercises.scala`
 
 ---
 class: center, middle
@@ -555,7 +499,9 @@ background-image: url(img/count-A-to-B-4.jpg)
 ---
 class: center, middle
 
-# Exercise 3
+# Exercise 5
+
+`exercises.types.TypeExercises.scala`
 
 ---
 background-image: url(img/int-to-int-type-1.jpg)
@@ -692,7 +638,9 @@ class: center, middle
 ---
 class: center, middle
 
-# Exercise 4 and 5
+# Exercises 6 and 7
+
+`exercises.types.TypeExercises.scala`
 
 ---
 .h1[# Type Algebra]
@@ -831,6 +779,41 @@ Either[A, B] => C = (A ∨ B) → C
 ]
 
 ---
+class: center, middle
+
+# All dynamic languages are static languages with a .hl[single] type
+
+---
+class: center, middle
+
+# Any
+
+---
+# Any => Any
+
+```tut:silent
+def inc(value: Any): Any = value match {
+  case x: Int    => x + 1
+  case x: Double => x + 1
+  case x: Char   => x.toString + "1"
+  case x: String => x + "1"
+}
+```
+
+--
+
+```tut
+inc(5)
+inc(10.3)
+inc('c')
+```
+
+```tut:fail
+inc(java.time.Instant.ofEpochMilli(0))
+```
+
+
+---
 # Resources and further study
 
 * [Programming with Algebra](https://blog.developer.atlassian.com/programming-with-algebra/): property based testing with storage
@@ -853,7 +836,10 @@ class: center, middle
 <script>
     var slideshow = remark.create({
         ratio: "16:9",
-        slideNumberFormat: '%current%'
+        slideNumberFormat: '%current%',
+        // highlightStyle: "github",
+        highlightLines: true,
+        highlightSpans: true,
     });
 </script>
 </body>

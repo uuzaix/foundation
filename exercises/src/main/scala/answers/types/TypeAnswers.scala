@@ -1,8 +1,13 @@
 package answers.types
 
+import java.time.Instant
+import java.util.UUID
+
 import answers.types.Comparison._
+import cats.data.NonEmptyList
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric._
+import exercises.sideeffect.IOExercises.IO
 import exercises.types.Card._
 import exercises.types.TypeExercises.{Branch, Func, One, Pair}
 import exercises.types._
@@ -10,20 +15,55 @@ import toimpl.types.TypeToImpl
 
 object TypeAnswers extends TypeToImpl {
 
-  type Two    = Branch[One, One]
-  type Three  = Branch[One, Two]
-  type Four_1 = Pair[Two, Two]
-  type Four_2 = Branch[Two, Two]
-  type Five_1 = Branch[Four_1, One]
-  type Five_2 = Branch[Three, Two]
-  type Eight  = Func[Three, Two]
+  ////////////////////////
+  // 2. Data Encoding
+  ////////////////////////
+
+  case class OrderId(value: UUID)
+  case class Order(id: OrderId, createdAt: Instant, status: OrderStatus)
+
+  sealed trait OrderStatus {
+    case class Draft(basket: List[Item], deliveryAddress: Option[Address])                           extends OrderStatus
+    case class Submitted(basket: NonEmptyList[Item], deliveryAddress: Address, submittedAt: Instant) extends OrderStatus
+    case class Delivered(basket: NonEmptyList[Item],
+                         deliveryAddress: Address,
+                         submittedAt: Instant,
+                         deliveredAt: Instant)
+        extends OrderStatus
+    case class Cancelled(basket: NonEmptyList[Item], cancelledAt: Instant) extends OrderStatus
+  }
+
+  case class ItemId(value: UUID)
+  case class Item(id: ItemId, quantity: Long, price: BigDecimal)
+
+  case class Address(streetNumber: Int, postCode: String)
+
+  ////////////////////////
+  // 3. Cardinality
+  ////////////////////////
 
   val boolean: Cardinality[Boolean] = new Cardinality[Boolean] {
     def cardinality: Card = Lit(2)
   }
 
+  val int: Cardinality[Int] = new Cardinality[Int] {
+    def cardinality: Card = Lit(2) ^ Lit(32)
+  }
+
+  val any: Cardinality[Any] = new Cardinality[Any] {
+    def cardinality: Card = Inf
+  }
+
+  val nothing: Cardinality[Nothing] = new Cardinality[Nothing] {
+    def cardinality: Card = Lit(0)
+  }
+
   val unit: Cardinality[Unit] = new Cardinality[Unit] {
     def cardinality: Card = Lit(1)
+  }
+
+  val ioUnit: Cardinality[IO[Unit]] = new Cardinality[IO[Unit]] {
+    def cardinality: Card = Inf
   }
 
   val byte: Cardinality[Byte] = new Cardinality[Byte] {
@@ -32,10 +72,6 @@ object TypeAnswers extends TypeToImpl {
 
   val char: Cardinality[Char] = new Cardinality[Char] {
     def cardinality: Card = Lit(2) ^ Lit(16)
-  }
-
-  val int: Cardinality[Int] = new Cardinality[Int] {
-    def cardinality: Card = Lit(2) ^ Lit(32)
   }
 
   val optUnit: Cardinality[Option[Unit]] = new Cardinality[Option[Unit]] {
@@ -66,20 +102,12 @@ object TypeAnswers extends TypeToImpl {
     def cardinality: Card = Inf
   }
 
-  val nothing: Cardinality[Nothing] = new Cardinality[Nothing] {
-    def cardinality: Card = Lit(0)
-  }
-
   val optNothing: Cardinality[Option[Nothing]] = new Cardinality[Option[Nothing]] {
     def cardinality: Card = nothing.cardinality + Lit(1)
   }
 
   val boolNothing: Cardinality[(Boolean, Nothing)] = new Cardinality[(Boolean, Nothing)] {
     def cardinality: Card = boolean.cardinality * nothing.cardinality
-  }
-
-  val any: Cardinality[Any] = new Cardinality[Any] {
-    def cardinality: Card = Inf
   }
 
   def option[A](a: Cardinality[A]): Cardinality[Option[A]] =
@@ -155,4 +183,13 @@ object TypeAnswers extends TypeToImpl {
     if (x < y) LessThan
     else if (x > y) GreaterThan
     else EqualTo
+
+  type Two    = Branch[One, One]
+  type Three  = Branch[One, Two]
+  type Four_1 = Pair[Two, Two]
+  type Four_2 = Branch[Two, Two]
+  type Five_1 = Branch[Four_1, One]
+  type Five_2 = Branch[Three, Two]
+  type Eight  = Func[Three, Two]
+
 }
